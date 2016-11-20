@@ -107,7 +107,7 @@ class User(db.Model):
 					email = email)
 
 	@classmethod
-	def login(cls, name, pw):
+	def verify_user(cls, name, pw):
 		u = cls.by_name(name)
 		if u and valid_pw(name, pw, u.pw_hash):
 			return u
@@ -165,20 +165,34 @@ class Signup(Handler):
 
 class Register(Signup):
 	def done(self):
-		 u = User.by_name(self.username)
-		 if u:
-		 	msg = "That user already exists."
-		 	self.render('sign-up.html', error_username = msg)
-		 else:
-		 	u = User.register(self.username, self.password, self.email)
-		 	u.put()
+		u = User.by_name(self.username)
+		if u:
+			msg = "That user already exists."
+			self.render('sign-up.html', error_username = msg)
+		else:
+			u = User.register(self.username, self.password, self.email)
+			u.put()
 
-		 	self.login(u)
-		 	self.redirect('/welcome')
+			self.login(u)
+			self.redirect('/welcome')
 
 class Login(Handler):
 	def get(self):
 		self.render('login-form.html')
+
+	def post(self):
+		username = self.request.get('username')
+		password = self.request.get('password')
+
+		u = User.verify_user(username, password)
+		if u:
+			self.login(u)
+			self.redirect('/welcome')
+		else:
+			msg = "Invalid login"
+			self.render('login-form.html', error = msg)
+
+
 
 class Logout(Handler):
 	def get(self):
